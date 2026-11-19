@@ -1,0 +1,42 @@
+﻿# Pinky Bear Maze - Berry si Beruang Pink 3D Material Library
+newmtl MainPink
+Kd 1.000 0.520 0.740
+Ka 0.350 0.200 0.280
+Ks 0.150 0.150 0.150
+Ns 20.0
+
+newmtl CreamPink
+Kd 1.000 0.890 0.940
+Ka 0.400 0.350 0.380
+Ks 0.100 0.100 0.100
+Ns 15.0
+
+newmtl BlushPink
+Kd 1.000 0.250 0.550
+Ka 0.400 0.100 0.220
+Ks 0.200 0.200 0.200
+Ns 30.0
+
+newmtl DarkEye
+Kd 0.160 0.070 0.140
+Ka 0.050 0.020 0.050
+Ks 0.800 0.800 0.800
+Ns 90.0
+
+newmtl PureWhite
+Kd 1.000 1.000 1.000
+Ka 0.800 0.800 0.800
+Ks 0.900 0.900 0.900
+Ns 100.0
+
+newmtl RibbonBlue
+Kd 0.220 0.820 1.000
+Ka 0.100 0.350 0.450
+Ks 0.300 0.300 0.300
+Ns 40.0
+
+newmtl RibbonGold
+Kd 1.000 0.850 0.200
+Ka 0.450 0.380 0.080
+Ks 0.600 0.500 0.200
+Ns 65.0

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pinky Bear Maze — Petualangan Labirin Beruang Pink Lucu</title>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        // Global error catcher to guarantee any issue is immediately visible
+        window.addEventListener('error', function(e) {
+            console.error("Game Error:", e.message, e.filename, e.lineno);
+            const errDiv = document.getElementById("debugError");
+            if (errDiv) {
+                errDiv.style.display = "block";
+                errDiv.textContent = "Error: " + e.message + " (" + e.filename + ":" + e.lineno + ")";
+            }
+        });
+    </script>
+</head>
+<body>
+    <main class="app">
+        <!-- Error Banner (hidden by default) -->
+        <div id="debugError" style="display:none; background:#dc2626; color:#fff; padding:10px; border-radius:8px; font-weight:bold; margin-bottom:10px;"></div>
+
+        <!-- Header -->
+        <header class="page-header">
+            <p class="eyebrow">✨ PETUALANGAN LABIRIN ANAK CERIA · TEMUKAN 3 KUNCI PELANGI ✨</p>
+            <h1 class="game-title">
+                <span class="title-main">PINKY BEAR MAZE</span>
+                <span class="title-year">CERIA!</span>
+            </h1>
+            <p class="subtitle">Kumpulkan 3 Kunci Pelangi di Labirin Permen, main petak umpet bersama <strong>Berry si Beruang Pink</strong> yang gemas, dan buka Pintu Kejutan!</p>
+        </header>
+
+        <!-- Game Container -->
+        <section class="game-shell" aria-label="Area permainan Labirin Beruang Pink">
+            <!-- Top HUD Bar -->
+            <div class="top-hud">
+                <!-- 3 Keys Inventory -->
+                <div class="keys-container" title="Koleksi 3 Kunci Pelangi untuk Membuka Pintu Kejutan">
+                    <span class="hud-label">KUNCI PELANGI (0/3)</span>
+                    <div class="key-slots">
+                        <div class="key-slot" id="keySlot1" title="Kunci Permen Mint (Hijau)">
+                            <span class="key-icon">🗝️</span>
+                            <span class="key-name">Mint</span>
+                        </div>
+                        <div class="key-slot" id="keySlot2" title="Kunci Bintang Madu (Kuning)">
+                            <span class="key-icon">🗝️</span>
+                            <span class="key-name">Madu</span>
+                        </div>
+                        <div class="key-slot" id="keySlot3" title="Kunci Stroberi (Pink)">
+                            <span class="key-icon">🗝️</span>
+                            <span class="key-name">Stroberi</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Heartbeat / Excitement Sensor -->
+                <div class="hud-item heartbeat-hud" id="heartbeatCard">
+                    <span class="hud-label">DETAK SEMANGAT</span>
+                    <div class="heartbeat-inner">
+                        <span class="heart-icon" id="heartIcon">💖</span>
+                        <strong id="bpmValue">72</strong>
+                        <span class="hud-small">BPM</span>
+                    </div>
+                </div>
+
+                <!-- Current Facing Direction -->
+                <div class="hud-item facing-hud">
+                    <span class="hud-label">ARAH HADAP</span>
+                    <strong id="hudFacingText">UTARA (N)</strong>
+                </div>
+
+                <!-- Survival Timer -->
+                <div class="hud-item timer-hud">
+                    <span class="hud-label">WAKTU BERMAIN</span>
+                    <strong id="survivalTimer">00:00</strong>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="hud-buttons">
+                    <button id="muteButton" class="icon-button" type="button" aria-pressed="false" title="Suara ON/OFF">🔊 Suara ON</button>
+                    <button id="mapToggleBtn" class="icon-button map-btn" type="button" title="Buka / Tutup Peta Labirin [M]">🗺️ Peta</button>
+                    <button id="fullscreenBtn" class="icon-button fullscreen-btn" type="button" aria-pressed="false" title="Layar Penuh [F]">⛶ Layar Penuh</button>
+                </div>
+            </div>
+
+            <!-- Cute Pink Bear Ticker -->
+            <div class="monster-ticker" id="monsterTicker" aria-live="polite">
+                <span class="ticker-prefix">🧸 KABAR BERRY:</span>
+                <span class="ticker-text" id="tickerText">BERRY SI BERUANG PINK SEDANG TIDUR SIANG... ZZZ...</span>
+            </div>
+
+            <!-- Viewport Wrap -->
+            <div class="canvas-wrap" id="canvasWrap">
+                <canvas id="gameCanvas" width="960" height="540" aria-label="Tampilan 3D Labirin Beruang Pink"></canvas>
+
+                <!-- Cute Pink Bubble Vignette Overlay -->
+                <div class="vignette-overlay" id="vignetteOverlay"></div>
+
+                <!-- Radar Minimap -->
+                <div class="persona-minimap-wrapper" id="minimapOverlay">
+                    <div class="compass-label compass-top">N</div>
+                    <div class="minimap-middle-row">
+                        <div class="compass-label compass-left">W</div>
+                        <div class="persona-radar-box">
+                            <canvas id="minimapCanvas" width="130" height="130"></canvas>
+                        </div>
+                        <div class="compass-label compass-right">E</div>
+                    </div>
+                    <div class="compass-label compass-bottom">S</div>
+                </div>
+
+                <!-- Notification Toast Inside Viewport -->
+                <div class="game-toast" id="gameToast"></div>
+
+                <!-- Interaction Prompt -->
+                <div class="interaction-prompt" id="interactionPrompt">Tekan [W] untuk Membuka Pintu Kejutan!</div>
+
+                <!-- Touch Controls (Mobile Friendly) -->
+                <div class="touch-controls" id="touchControls">
+                    <div class="dpad">
+                        <button type="button" class="touch-btn dpad-up" id="btnUp" aria-label="Maju (W)">W ▲</button>
+                        <div class="dpad-middle">
+                            <button type="button" class="touch-btn dpad-left" id="btnLeft" aria-label="Menoleh Kiri (A)">◀ A</button>
+                            <button type="button" class="touch-btn dpad-down" id="btnDown" aria-label="Putar Belakang (S)">▼ S</button>
+                            <button type="button" class="touch-btn dpad-right" id="btnRight" aria-label="Menoleh Kanan (D)">D ▶</button>
+                        </div>
+                    </div>
+                    <div class="touch-actions">
+                        <button type="button" class="touch-action-btn" id="btnTurnLeft" aria-label="Putar Kiri">↺ Belok Kiri</button>
+                        <button type="button" class="touch-action-btn" id="btnTurnRight" aria-label="Putar Kanan">↻ Belok Kanan</button>
+                    </div>
+                </div>
+
+                <!-- START SCREEN OVERLAY (Shorter and wider banner layout) -->
+                <div class="screen-overlay" id="startScreen">
+                    <div class="modal-box modal-wide">
+                        <div class="badge-tag">🌈 DUNIA LABIRIN WARNA-WARNI · PETAK UMPET CERIA</div>
+                        <h2 class="modal-title">PINKY BEAR MAZE <span class="year-accent">CERIA!</span></h2>
+                        <p class="modal-desc">
+                            Ayo berpetualang di Labirin Balok Warna-Warni dan main petak umpet bersama <strong>Berry si Beruang Pink</strong> yang lucu & suka memeluk!
+                        </p>
+
+                        <!-- 2-Column Wide Grid for Mission & Controls -->
+                        <div class="modal-grid">
+                            <div class="modal-col">
+                                <h3 class="col-title">🌟 MISI PETUALANGAN</h3>
+                                <div class="mission-checklist">
+                                    <div class="checklist-item">
+                                        <span class="check-icon">1</span>
+                                        <div><strong>Cari 3 Kunci Pelangi</strong>: Kunci Mint, Madu, dan Stroberi di sudut labirin.</div>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="check-icon">2</span>
+                                        <div><strong>Main Petak Umpet</strong>: Jangan sampai tertangkap pelukan Berry si Beruang Pink!</div>
+                                    </div>
+                                    <div class="checklist-item">
+                                        <span class="check-icon">3</span>
+                                        <div><strong>Buka Pintu Kejutan Pelangi</strong> setelah ketiga kunci berhasil terkumpul!</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-col">
+                                <h3 class="col-title">🎮 CARA BERGERAK</h3>
+                                <div class="controls-guide">
+                                    <div>• <kbd>W</kbd> : <strong>Maju 1 Petak ke Depan</strong></div>
+                                    <div>• <kbd>A</kbd> : <strong>Menoleh ke Kiri (90°)</strong></div>
+                                    <div>• <kbd>D</kbd> : <strong>Menoleh ke Kanan (90°)</strong></div>
+                                    <div>• <kbd>S</kbd> : <strong>Putar Balik (180°)</strong></div>
+                                    <div>• <kbd>M</kbd> : Peta Mini · <kbd>F</kbd> : Layar Penuh</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="startGameBtn" class="cta-button" type="button">🎈 MULAI PETUALANGAN SEKARANG!</button>
+                    </div>
+                </div>
+
+                <!-- GAME OVER SCREEN OVERLAY (Hugged by Cute Pink Bear) -->
+                <div class="screen-overlay hidden" id="gameOverScreen">
+                    <div class="modal-box gameover-box">
+                        <div class="skull-anim">🧸</div>
+                        <h2 class="danger-title">TERTANGKAP PELUKAN BERRY!</h2>
+                        <p class="modal-desc" id="gameOverDesc">
+                            Hihi! Berry si Beruang Pink berhasil menemukanmu dan memberimu pelukan hangat yang super gemas! Yuk coba lagi!
+                        </p>
+                        <div class="stats-summary">
+                            <div class="stat-box">
+                                <span class="stat-label">KUNCI DITEMUKAN</span>
+                                <strong id="goKeysFound">0 / 3</strong>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">WAKTU BERMAIN</span>
+                                <strong id="goSurvivalTime">00:00</strong>
+                            </div>
+                        </div>
+                        <div class="screen-actions">
+                            <button id="restartBtn" class="cta-button retry-button" type="button">🍭 MAIN LAGI YUK!</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VICTORY SCREEN OVERLAY (Escaped) -->
+                <div class="screen-overlay hidden" id="victoryScreen">
+                    <div class="modal-box victory-box">
+                        <div class="trophy-anim">🏆</div>
+                        <h2 class="victory-title">HOREEE! KAMU MENANG PETAK UMPET!</h2>
+                        <p class="modal-desc">
+                            Hebat sekali! Ketiga Kunci Pelangi berhasil membuka Pintu Kejutan. Berry si Beruang Pink bertepuk tangan gembira untukmu!
+                        </p>
+                        <div class="stats-summary">
+                            <div class="stat-box">
+                                <span class="stat-label">TOTAL KUNCI</span>
+                                <strong class="gold-text">3 / 3</strong>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">WAKTU SELESAI</span>
+                                <strong id="vicTime">01:45</strong>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">REKOR TERCEPAT</span>
+                                <strong id="vicBestTime">--:--</strong>
+                            </div>
+                        </div>
+                        <div class="screen-actions">
+                            <button id="playAgainBtn" class="cta-button victory-button" type="button">🌈 MAIN LAGI DI LABIRIN BARU!</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom HUD / Quick Status Bar -->
+            <div class="bottom-hud">
+                <span>Status: <strong id="playerStatus" class="status-pill">CERIA</strong></span>
+                <span>Arah Hadap: <strong id="playerFacingText">UTARA (N)</strong></span>
+                <span>Jarak Berry: <strong id="monsterDistanceText">JAUH</strong></span>
+                <span>Posisi: <strong id="playerCoords">Labirin [Baris: 1, Kolom: 1]</strong></span>
+                <span class="hud-tip">💡 Tips: Tekan [W] untuk maju, [A]/[D] untuk menoleh, dan [S] untuk putar balik!</span>
+            </div>
+        </section>
+
+        <!-- Help and Lore Panel -->
+        <section class="help-panel">
+            <div class="lore-text">
+                <h2>🧸 Tentang Game: Pinky Bear Maze</h2>
+                <p>
+                    <strong>Pinky Bear Maze</strong> adalah game petualangan labirin 3D penuh warna untuk anak-anak! Jelajahi koridor balok warna-warni petak demi petak, kumpulkan 3 Kunci Pelangi (Mint, Madu, dan Stroberi), dan dengarkan suara langkah kaki lucu dari <em>Berry si Beruang Pink</em> yang ingin mengajakmu bermain petak umpet!
+                </p>
+            </div>
+            <div class="help-controls">
+                <button id="howToPlayBtn" class="secondary-button" type="button">📖 Panduan</button>
+                <button id="quickRestartBtn" class="secondary-button" type="button">🔄 Mulai Ulang</button>
+            </div>
+        </section>
+
+        <footer class="footer-note">
+            Pinky Bear Maze · Petualangan Labirin 3D Anak Ceria · WebGL 3D & Web Audio API
+        </footer>
+    </main>
+
+    <script src="game.js"></script>
+</body>
+</html>
